@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import {
     createChat,
@@ -11,7 +11,7 @@ import {
     createGroupChat
 } from "../controllers/chat.controller.js";
 
-const router = express.Router();
+const router:Router = express.Router();
 
 // Protected routes only
 router.use(verifyJWT);

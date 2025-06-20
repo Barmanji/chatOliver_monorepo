@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import {
     createNotification,
@@ -9,7 +9,7 @@ import {
     clearAllNotifications,
 } from "../controllers/notification.controller.js";
 
-const router = express.Router();
+const router:Router = express.Router();
 router.use(verifyJWT);
 
 // Notification APIs

@@ -3,8 +3,9 @@ import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import mongoose, { isValidObjectId } from 'mongoose';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { Request, Response, RequestHandler } from 'express';
 
-const createNotification = asyncHandler(async (req, res) => {
+const createNotification: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { userId, type, data } = req.body;
 
     if (!isValidObjectId(userId)) throw new ApiError(400, "Invalid user ID");
@@ -18,7 +19,8 @@ const createNotification = asyncHandler(async (req, res) => {
     res.status(201).json(new ApiResponse(201, notification, "Notification created"));
 });
 
-const getUserNotifications = asyncHandler(async (req, res) => {
+const getUserNotifications: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user?._id) throw new ApiError(401, "User not authenticated");
     const userId = req.user._id;
 
     const notifications = await Notification.find({ userId }).sort({ createdAt: -1 });
@@ -26,7 +28,8 @@ const getUserNotifications = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, notifications));
 });
 
-const markNotificationAsRead = asyncHandler(async (req, res) => {
+const markNotificationAsRead: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user?._id) throw new ApiError(401, "User not authenticated");
     const userId = req.user._id;
     const { notificationId } = req.params;
 
@@ -43,7 +46,8 @@ const markNotificationAsRead = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, notification, "Notification marked as read"));
 });
 
-const deleteNotification = asyncHandler(async (req, res) => {
+const deleteNotification: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user?._id) throw new ApiError(401, "User not authenticated");
     const userId = req.user._id;
     const { notificationId } = req.params;
 
@@ -56,7 +60,8 @@ const deleteNotification = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, null, "Notification deleted"));
 });
 
-const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
+const markAllNotificationsAsRead: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user?._id) throw new ApiError(401, "User not authenticated");
     const userId = req.user._id;
 
     await Notification.updateMany({ userId, readStatus: false }, { $set: { readStatus: true } });
@@ -64,7 +69,8 @@ const markAllNotificationsAsRead = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, null, "All notifications marked as read"));
 });
 
-const clearAllNotifications = asyncHandler(async (req, res) => {
+const clearAllNotifications: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    if (!req.user?._id) throw new ApiError(401, "User not authenticated");
     const userId = req.user._id;
 
     await Notification.deleteMany({ userId });

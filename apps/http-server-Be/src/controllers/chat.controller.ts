@@ -1,10 +1,22 @@
 import mongoose, { isValidObjectId } from "mongoose";
+import { Request, Response, RequestHandler } from "express";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Chat } from "../models/chat/chat.model.js";
+import { Group } from "../models/group/group.model.js";
+import { IUser } from "../models/user/user.model.js";
 
-const createChat = asyncHandler(async (req, res) => {
+// Extend the Express Request type to include user
+declare global {
+    namespace Express {
+        interface Request {
+            user?: IUser;
+        }
+    }
+}
+
+const createChat: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { participantIds, isGroupChat, groupId } = req.body;
 
     if (!Array.isArray(participantIds) || participantIds.length < 2) {
@@ -20,8 +32,11 @@ const createChat = asyncHandler(async (req, res) => {
     res.status(201).json(new ApiResponse(201, chat, "Chat created successfully"));
 });
 
-const getUserChats = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
+const getUserChats: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+    if (!userId) {
+        throw new ApiError(401, "User not authenticated");
+    }
 
     const chats = await Chat.find({ participants: userId })
         .populate("participants", "-password")
@@ -31,7 +46,7 @@ const getUserChats = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, chats));
 });
 
-const getChatById = asyncHandler(async (req, res) => {
+const getChatById: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { chatId } = req.params;
 
     if (!isValidObjectId(chatId)) {
@@ -47,7 +62,7 @@ const getChatById = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, chat));
 });
 
-const addUserToGroup = asyncHandler(async (req, res) => {
+const addUserToGroup: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { chatId, userId } = req.body;
 
     const chat = await Chat.findById(chatId);
@@ -65,7 +80,7 @@ const addUserToGroup = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, chat, "User added to group"));
 });
 
-const removeUserFromGroup = asyncHandler(async (req, res) => {
+const removeUserFromGroup: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { chatId, userId } = req.body;
 
     const chat = await Chat.findById(chatId);
@@ -73,15 +88,18 @@ const removeUserFromGroup = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Group chat not found");
     }
 
-    chat.participants = chat.participants.filter(p => p.toString() !== userId);
+    chat.participants = chat.participants.filter((p: mongoose.Types.ObjectId) => p.toString() !== userId);
     await chat.save();
 
     res.status(200).json(new ApiResponse(200, chat, "User removed from group"));
 });
 
-const updateTypingStatus = asyncHandler(async (req, res) => {
+const updateTypingStatus: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { chatId, isTyping } = req.body;
-    const userId = req.user._id;
+    const userId = req.user?._id;
+    if (!userId) {
+        throw new ApiError(401, "User not authenticated");
+    }
 
     const chat = await Chat.findById(chatId);
     if (!chat) throw new ApiError(404, "Chat not found");
@@ -91,14 +109,14 @@ const updateTypingStatus = asyncHandler(async (req, res) => {
     if (isTyping && !isAlreadyTyping) {
         chat.typingUsers.push(userId);
     } else if (!isTyping && isAlreadyTyping) {
-        chat.typingUsers = chat.typingUsers.filter(id => id.toString() !== userId.toString());
+        chat.typingUsers = chat.typingUsers.filter((id: mongoose.Types.ObjectId) => id.toString() !== userId.toString());
     }
 
     await chat.save();
     res.status(200).json(new ApiResponse(200, null, "Typing status updated"));
 });
 
-const deleteChat = asyncHandler(async (req, res) => {
+const deleteChat: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { chatId } = req.params;
 
     const chat = await Chat.findByIdAndDelete(chatId);
@@ -107,7 +125,7 @@ const deleteChat = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, chat, "Chat deleted successfully"));
 });
 
-const createGroupChat = asyncHandler(async (req, res) => {
+const createGroupChat: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { name, description, members, adminId } = req.body;
 
     if (!Array.isArray(members) || members.length < 2) {

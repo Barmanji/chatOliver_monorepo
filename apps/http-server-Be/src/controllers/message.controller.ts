@@ -4,10 +4,15 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Chat } from "../models/chat/chat.model.js";
+import { Request, Response, RequestHandler } from "express";
 
-const sendMessage = asyncHandler(async (req, res) => {
+const sendMessage: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { chatId, content, messageType } = req.body;
-    const senderId = req.user._id;
+    const senderId = req.user?._id;
+
+    if (!senderId) {
+        throw new ApiError(401, "User not authenticated");
+    }
 
     if (!chatId || !content || !messageType) {
         throw new ApiError(
@@ -30,7 +35,7 @@ const sendMessage = asyncHandler(async (req, res) => {
     res.status(201).json(new ApiResponse(201, message, "Message sent"));
 });
 
-const getMessages = asyncHandler(async (req, res) => {
+const getMessages: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { chatId } = req.params;
 
     if (!isValidObjectId(chatId)) {
@@ -44,7 +49,7 @@ const getMessages = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, messages));
 });
 
-const markAsSeen = asyncHandler(async (req, res) => {
+const markAsSeen: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { messageId } = req.params;
 
     if (!isValidObjectId(messageId)) {
@@ -60,7 +65,7 @@ const markAsSeen = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, message, "Marked as seen"));
 });
 
-const markAsDelivered = asyncHandler(async (req, res) => {
+const markAsDelivered: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { messageId } = req.params;
 
     if (!isValidObjectId(messageId)) {
@@ -76,8 +81,13 @@ const markAsDelivered = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, message, "Marked as delivered"));
 });
 
-const deleteMessage = asyncHandler(async (req, res) => {
+const deleteMessage: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { messageId } = req.params;
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(401, "User not authenticated");
+    }
 
     if (!isValidObjectId(messageId)) {
         throw new ApiError(400, "Invalid message ID");
@@ -86,7 +96,7 @@ const deleteMessage = asyncHandler(async (req, res) => {
     const message = await Message.findById(messageId);
     if (!message) throw new ApiError(404, "Message not found");
 
-    if (message.senderId.toString() !== req.user._id.toString()) {
+    if (message.senderId.toString() !== userId.toString()) {
         throw new ApiError(403, "Only the sender can delete this message");
     }
 
@@ -95,9 +105,14 @@ const deleteMessage = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, null, "Message deleted"));
 });
 
-const editMessage = asyncHandler(async (req, res) => {
+const editMessage: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { messageId } = req.params;
     const { content } = req.body;
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(401, "User not authenticated");
+    }
 
     if (!isValidObjectId(messageId)) {
         throw new ApiError(400, "Invalid message ID");
@@ -110,7 +125,7 @@ const editMessage = asyncHandler(async (req, res) => {
     const message = await Message.findById(messageId);
     if (!message) throw new ApiError(404, "Message not found");
 
-    if (message.senderId.toString() !== req.user._id.toString()) {
+    if (message.senderId.toString() !== userId.toString()) {
         throw new ApiError(403, "Only the sender can edit this message");
     }
 
@@ -120,7 +135,7 @@ const editMessage = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, message, "Message edited"));
 });
 
-const getLastMessage = asyncHandler(async (req, res) => {
+const getLastMessage: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { chatId } = req.params;
 
     if (!isValidObjectId(chatId)) {

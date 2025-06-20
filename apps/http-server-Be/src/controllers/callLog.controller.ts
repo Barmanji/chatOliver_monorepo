@@ -3,10 +3,20 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose, { isValidObjectId } from "mongoose";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Request, Response, RequestHandler } from "express";
+import { IUser } from "../models/user/user.model.js";
 
-const createCallLog = asyncHandler(async (req, res) => {
+interface AuthenticatedRequest extends Request {
+    user?: IUser;
+}
+
+const createCallLog: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { receiver, callType, status } = req.body;
-    const caller = req.user._id;
+    const caller = req.user?._id;
+
+    if (!caller) {
+        throw new ApiError(401, "User not authenticated");
+    }
 
     if (!isValidObjectId(receiver)) {
         throw new ApiError(400, "Invalid receiver ID");
@@ -21,8 +31,12 @@ const createCallLog = asyncHandler(async (req, res) => {
     res.status(201).json(new ApiResponse(201, log, "Call log created"));
 });
 
-const getUserCallLogs = asyncHandler(async (req, res) => {
-    const userId = req.user._id;
+const getUserCallLogs: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(401, "User not authenticated");
+    }
 
     const logs = await CallLog.find({
         $or: [{ caller: userId }, { receiver: userId }],
@@ -34,7 +48,7 @@ const getUserCallLogs = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, logs));
 });
 
-const getCallLogById = asyncHandler(async (req, res) => {
+const getCallLogById: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { logId } = req.params;
 
     if (!isValidObjectId(logId)) throw new ApiError(400, "Invalid call log ID");
@@ -48,9 +62,13 @@ const getCallLogById = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, log));
 });
 
-const deleteCallLog = asyncHandler(async (req, res) => {
+const deleteCallLog: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
     const { logId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(401, "User not authenticated");
+    }
 
     if (!isValidObjectId(logId)) throw new ApiError(400, "Invalid call log ID");
 

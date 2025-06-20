@@ -1,8 +1,41 @@
-import jwt from "jsonwebtoken";
-import mongoose, { Schema } from "mongoose";
+import dotenv from "dotenv";
+import mongoose, { Schema, Document, Model } from "mongoose";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-const userSchema = new Schema(
+dotenv.config({ path: "./.env"})
+// ---------------------------
+// 1. User Data Interface
+// ---------------------------
+export interface IUser {
+    username: string;
+    fullname: string;
+    password: string;
+    email: string;
+    profilePicture: string;
+    bio: string;
+    status: "online" | "offline";
+    refreshToken: string;
+    friends?: mongoose.Types.ObjectId[];
+    _id?: mongoose.Types.ObjectId;
+    createdAt?: Date;
+    updatedAt?: Date;
+}
+
+// ---------------------------
+// 2. User Methods Interface
+// ---------------------------
+export interface IUserMethods {
+    save?: any;
+    isPasswordCorrect(password: string): Promise<boolean>;
+    generateAccessToken(): string;
+    generateRefreshToken(): string;
+}
+
+// ---------------------------
+// 3. User Schema Definition
+// ---------------------------
+const userSchema = new Schema<IUser, Model<IUser, {}, IUserMethods>, {}, IUserMethods>(
     {
         friends: [
             {
@@ -16,7 +49,7 @@ const userSchema = new Schema(
             unique: true,
             lowercase: true,
             trim: true,
-            index: true, //whenever we need to search somsethiing its best adviced to enable the index tag in schema!!
+            index: true,
         },
         fullname: {
             type: String,
@@ -33,11 +66,10 @@ const userSchema = new Schema(
         },
         password: {
             type: String,
-            required: [true, "Password is required"], //with all true field we can pass in arry for default values
+            required: [true, "Password is required"],
         },
-
         profilePicture: {
-            type: String, //cloudnary something something like AWS for url ()FREEE() read about it!
+            type: String,
             required: true,
         },
         bio: {
@@ -51,52 +83,54 @@ const userSchema = new Schema(
         },
         refreshToken: {
             type: String,
+            default: "",
         },
     },
-    {
-        timestamps: true,
-    }
+    { timestamps: true }
 );
 
-//dont write callback like() => {} in .pre because we dont have .this fucnatiolity. READ MORE ABOUT!!! ###a
+// ---------------------------
+// 4. Pre-save Hook for Password Hashing
+// ---------------------------
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();
     this.password = await bcrypt.hash(this.password, 10);
     next();
 });
 
-userSchema.methods.isPasswordCorrect = async function (password) {
-    const Password = await bcrypt.compare(password, this.password);
-    return Password;
+// ---------------------------
+// 5. Instance Methods
+// ---------------------------
+userSchema.methods.isPasswordCorrect = async function (password: string): Promise<boolean> {
+    return await bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.generateAccessToken = function () {
-    // jwt.verify(token, secretOrPublicKey, [options, callback]) or jwt.sign(payload, secretOrPrivateKey, [options, callback]) and 1h 1d you can pass liek htat
+userSchema.methods.generateAccessToken = function (): string {
     return jwt.sign(
         {
-            // These data will be encoded by JWT
             _id: this._id,
             username: this.username,
             email: this.email,
             fullname: this.fullname,
         },
-        process.env.ACCESS_TOKEN_SECRET,
+        process.env.ACCESS_TOKEN_SECRET as any,
         {
-            expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-        }
-    );
-};
-userSchema.methods.generateRefreshToken = function () {
-    // stance methods Instances of Models are documents. Documents have many of their own built-in instance methods. We may also define our own custom document instance methods.
-    return jwt.sign(
-        {
-            _id: this._id,
-        },
-        process.env.REFRESH_TOKEN_SECRET,
-        {
-            expiresIn: process.env.REFRESH_TOKEN_EXPIRY,
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY as any,
         }
     );
 };
 
-export const User = mongoose.model("User", userSchema);
+userSchema.methods.generateRefreshToken = function (): string {
+    return jwt.sign(
+        { _id: this._id },
+        process.env.REFRESH_TOKEN_SECRET as any,
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY as any,
+        }
+    );
+};
+
+// ---------------------------
+// 6. Export Model
+// ---------------------------
+export const User = mongoose.model<IUser, Model<IUser, {}, IUserMethods>>("User", userSchema);

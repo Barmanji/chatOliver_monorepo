@@ -1,5 +1,5 @@
 {
-  "name": "chatApp_monorepo",
+  "name": "chatapp_monorepo",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -16,5 +16,25 @@
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
-  }
+  },
+  "version": "1.0.0",
+  "description": "This Turborepo starter is maintained by the Turborepo core team.",
+  "main": "index.js",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "eslint": "^9.27.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-only-warn": "^1.1.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "eslint-plugin-turbo": "^2.5.0",
+    "eslint-scope": "^8.3.0",
+    "eslint-visitor-keys": "^4.2.0",
+    "typescript-eslint": "^8.32.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }

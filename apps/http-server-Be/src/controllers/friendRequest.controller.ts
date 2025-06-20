@@ -1,14 +1,20 @@
 import mongoose, { isValidObjectId } from "mongoose";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { FriendRequest } from "../models/friends/friendRequest.model.js";
-import { User } from "../models/user/user.model.js"; // Needed for adding to friends list
+import { User, IUser } from "../models/user/user.model.js";
 
-const sendFriendRequest = asyncHandler(async (req, res) => {
-    const from = req.user._id;
+interface AuthenticatedRequest extends Request {
+    user?: IUser;
+}
+
+const sendFriendRequest: RequestHandler = asyncHandler(async (req, res, next) => {
+    const from = (req as AuthenticatedRequest).user?._id;
     const { to } = req.body;
 
+    if (!from) throw new ApiError(401, "User not authenticated");
     if (!isValidObjectId(to)) throw new ApiError(400, "Invalid user ID");
 
     if (from.toString() === to) throw new ApiError(400, "Cannot send request to yourself");
@@ -27,8 +33,9 @@ const sendFriendRequest = asyncHandler(async (req, res) => {
     res.status(201).json(new ApiResponse(201, request, "Friend request sent"));
 });
 
-const getOutgoingRequests = asyncHandler(async (req, res) => {
-    const from = req.user._id;
+const getOutgoingRequests: RequestHandler = asyncHandler(async (req, res, next) => {
+    const from = (req as AuthenticatedRequest).user?._id;
+    if (!from) throw new ApiError(401, "User not authenticated");
 
     const requests = await FriendRequest.find({ from })
         .populate("to", "username name profilePicture")
@@ -37,8 +44,9 @@ const getOutgoingRequests = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, requests));
 });
 
-const getIncomingRequests = asyncHandler(async (req, res) => {
-    const to = req.user._id;
+const getIncomingRequests: RequestHandler = asyncHandler(async (req, res, next) => {
+    const to = (req as AuthenticatedRequest).user?._id;
+    if (!to) throw new ApiError(401, "User not authenticated");
 
     const requests = await FriendRequest.find({ to, status: "pending" })
         .populate("from", "username name profilePicture")
@@ -47,8 +55,9 @@ const getIncomingRequests = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, requests));
 });
 
-const cancelSentRequest = asyncHandler(async (req, res) => {
-    const from = req.user._id;
+const cancelSentRequest: RequestHandler = asyncHandler(async (req, res, next) => {
+    const from = (req as AuthenticatedRequest).user?._id;
+    if (!from) throw new ApiError(401, "User not authenticated");
     const { requestId } = req.params;
 
     if (!isValidObjectId(requestId)) throw new ApiError(400, "Invalid request ID");
@@ -61,8 +70,9 @@ const cancelSentRequest = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, null, "Friend request canceled"));
 });
 
-const acceptIncomingFriendRequest = asyncHandler(async (req, res) => {
-    const to = req.user._id;
+const acceptIncomingFriendRequest: RequestHandler = asyncHandler(async (req, res, next) => {
+    const to = (req as AuthenticatedRequest).user?._id;
+    if (!to) throw new ApiError(401, "User not authenticated");
     const { requestId } = req.params;
 
     if (!isValidObjectId(requestId)) throw new ApiError(400, "Invalid request ID");
@@ -73,15 +83,16 @@ const acceptIncomingFriendRequest = asyncHandler(async (req, res) => {
     request.status = "accepted";
     await request.save();
 
-    // Add to both users' friend lists (assuming User model has a `friends` array)
+    // Add to both users' friend lists
     await User.findByIdAndUpdate(to, { $addToSet: { friends: request.from } });
     await User.findByIdAndUpdate(request.from, { $addToSet: { friends: to } });
 
     res.status(200).json(new ApiResponse(200, request, "Friend request accepted"));
 });
 
-const rejectIncomingFriendRequest = asyncHandler(async (req, res) => {
-    const to = req.user._id;
+const rejectIncomingFriendRequest: RequestHandler = asyncHandler(async (req, res, next) => {
+    const to = (req as AuthenticatedRequest).user?._id;
+    if (!to) throw new ApiError(401, "User not authenticated");
     const { requestId } = req.params;
 
     if (!isValidObjectId(requestId)) throw new ApiError(400, "Invalid request ID");

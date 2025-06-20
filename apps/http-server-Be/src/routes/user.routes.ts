@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import {
@@ -17,7 +17,7 @@ import {
 } from "../controllers/user.controller.js";
 
 
-const router = express.Router();
+const router:Router = express.Router();
 
 // Public routes
 router.route("/register").post(

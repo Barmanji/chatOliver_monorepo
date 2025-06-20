@@ -1,1 +1,1 @@
-export const DB_NAME = 'chat-app';
+export const DB_NAME = 'chatApp-Oliver-monorepo';

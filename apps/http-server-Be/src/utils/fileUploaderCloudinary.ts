@@ -1,13 +1,15 @@
+import dotenv from "dotenv";
 import { v2 as cloudinary } from 'cloudinary';
 import fs from "fs";
 
+dotenv.config({ path: "./.env"})
 cloudinary.config({
     cloud_name: process.env.CLOUDNARY_CLOUDNAME,
     api_key: process.env.CLOUDNARY_APIKEY,
     api_secret: process.env.CLOUDNARY_APISECRET,
 });
 //let currentImage;
-const uploadResultCloudinary = async (localFilePath) => {
+const uploadResultCloudinary = async (localFilePath: string) => {
     try {
         if(!localFilePath) return null;
         const responseCloudnary = await cloudinary.uploader.upload(
@@ -31,7 +33,7 @@ const uploadResultCloudinary = async (localFilePath) => {
 }
 
 
-const deleteFromCloudinary = async (cloudinaryFilepath) => {
+const deleteFromCloudinary = async (cloudinaryFilepath: any) => {
   try {
     if (!cloudinaryFilepath) return null;
     const fileName = cloudinaryFilepath.split("/").pop().split(".")[0];
