@@ -18,7 +18,7 @@ function AuthLayout() {
           <ul style={{ listStyle: 'none', padding: 0, display: 'flex', justifyContent: 'center', gap: '20px' }}>
             <li>
               {/* Using Link from react-router-dom for navigation */}
-              <Link to="/login" style={{ textDecoration: 'none', color: '#0056b3', fontWeight: 'bold' }}>Login</Link>
+              <Link to="/login" style={{  color: '#0056b3', fontWeight: 'bold' }}>Login</Link>
             </li>
             <li>
               {/* Using Link from react-router-dom for navigation */}
