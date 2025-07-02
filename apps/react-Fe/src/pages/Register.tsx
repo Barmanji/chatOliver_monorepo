@@ -1,24 +1,22 @@
-import axios from "axios";
 import { useState } from "react";
+import { registerUser } from "../api/auth/register";
 
 function Register() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [email, setEmail] = useState("");
 
-    const handleSubmit = async (event: React.FormEvent) => {
+    const handleRegisterSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
+        setEmail("");
         try {
-            const response = await axios.post("/api/register", {
-                username,
-                password,
-                email,
-            });
-            console.log("Registration successful:", response.data);
-        } catch (error) {
-            console.error("Registration failed:", error);
+            const data = await registerUser(username, email, password);
+            console.log("Login successful:", data);
+            // Handle successful login (e.g., store tokens, redirect)
+        } catch (error: any) {
+            console.error("Login failed:", error);
         }
-    }
+    };
     return (
         <div
             style={{
@@ -29,20 +27,26 @@ function Register() {
             }}
         >
             <h2>Register Page</h2>
-            <form>
+            <form onSubmit={handleRegisterSubmit}>
                 <label>
-                    Email: <input type="email" />
+                    Username/Email:{" "}
+                    <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                    />
                 </label>
                 <br />
                 <label>
-                    New Password: <input type="password" />
+                    Password:{" "}
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
                 </label>
                 <br />
-                <label>
-                    Confirm Password: <input type="password" />
-                </label>
-                <br />
-                <button type="submit">Register</button>
+                <button type="submit">Login</button>
             </form>
             <p>This is the actual Register component content.</p>
         </div>
