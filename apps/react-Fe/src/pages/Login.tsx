@@ -1,55 +1,37 @@
-import { loginUser } from "../api/auth/login";
-import { useState } from "react";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { AuthService } from "../api/auth/auth";
 
-
-function Login() {
-    const [usernameOrEmail, setUsernameOrEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const handleLoginSubmit = async (event: React.FormEvent) =>  {
-        event.preventDefault();
-        try {
-            const data = await loginUser(usernameOrEmail, password);
-            console.log("Login successful:", data);
-            // Handle successful login (e.g., store tokens, redirect)
-        } catch (error: any) {
-            console.error("Login failed:", error);
-        }
-    };
-    return (
-        <div
-            style={{
-                padding: "20px",
-                border: "1px solid #ccc",
-                margin: "10px",
-                backgroundColor: "#f0f0f0",
-            }}
-        >
-
-            <h2>Login Page</h2>
-            <form onSubmit={handleLoginSubmit}>
-                <label>
-                    Username/Email:{" "}
-                    <input
-                        type="text"
-                        value={usernameOrEmail}
-                        onChange={(e) => setUsernameOrEmail(e.target.value)}
-                    />
-                </label>
-                <br />
-                <label>
-                    Password:{" "}
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                </label>
-                <br />
-                <button type="submit">Login</button>
-            </form>
-            <p>This is the actual Loign component content.</p>
-        </div>
-    );
+interface IFormInput {
+    identifier: string; // can be email or username
+    password: string;
 }
 
-export default Login;
+export default function Login() {
+    const { register, handleSubmit } = useForm<IFormInput>();
+    const onSubmit: SubmitHandler<IFormInput> = (data) => {
+        const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.identifier);
+        isEmail
+            ? { email: data.identifier, password: data.password }
+            : { username: data.identifier, password: data.password };
+        const auth = new AuthService
+        auth.login(data.identifier, data.password)
+    };
+
+    return (
+        <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="justify-center">
+                <input
+                    type="text"
+                    placeholder="Email or Username"
+                    {...register("identifier", { required: "Email or Username is required" })}
+                />
+                <input
+                    type="password"
+                    placeholder="Password"
+                    {...register("password", { required: "Password is required", minLength: { value: 0, message: "Password must be at least 6 characters" } })}
+                />
+            </div>
+            <input className="py-12" type="submit" />
+        </form>
+    );
+}

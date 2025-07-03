@@ -1,56 +1,69 @@
-import { useState } from "react";
-import { registerUser } from "../api/auth/register";
+import { useForm, type SubmitHandler } from "react-hook-form";
+import { AuthService } from "../api/auth/auth";
 
-function Register() {
-    const [username, setUsername] = useState("");
-    const [password, setPassword] = useState("");
-    const [email, setEmail] = useState("");
-
-    const handleRegisterSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
-        setEmail("");
-        try {
-            const data = await registerUser(username, email, password);
-            console.log("Login successful:", data);
-            // Handle successful login (e.g., store tokens, redirect)
-        } catch (error: any) {
-            console.error("Login failed:", error);
-        }
-    };
-    return (
-        <div
-            style={{
-                padding: "20px",
-                border: "1px solid #ccc",
-                margin: "10px",
-                backgroundColor: "#f0f0f0",
-            }}
-        >
-            <h2>Register Page</h2>
-            <form onSubmit={handleRegisterSubmit}>
-                <label>
-                    Username/Email:{" "}
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
-                </label>
-                <br />
-                <label>
-                    Password:{" "}
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                    />
-                </label>
-                <br />
-                <button type="submit">Login</button>
-            </form>
-            <p>This is the actual Register component content.</p>
-        </div>
-    );
+interface IFormInputs {
+    fullname: string;
+    username: string;
+    email: string;
+    password: string;
+    profilePicture: string;
 }
 
-export default Register;
+
+export default function Register() {
+    const {
+        register,
+        formState: { errors },
+        handleSubmit,
+    } = useForm<IFormInputs>();
+    const onSubmit: SubmitHandler<IFormInputs> = (data) => {
+        const auth = new AuthService();
+        auth.register(data.fullname, data.username, data.email, data.password, data.profilePicture)
+        console.log(data)
+    };
+
+
+    return (
+        <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="flex justify-center items-center h-screen">
+                <div className="flex flex-col gap-10 justify-center items-center w-96 h-96 bg-gray-100 rounded-lg shadow-lg p-6">
+                    <input
+                        type="text"
+                        placeholder="FullName"
+                        {...register("fullname", { required: true })}
+                    />
+                    {errors.fullname && "FullName is required"}
+
+                    <input
+                        type="text"
+                        placeholder="Username"
+                        {...register("username", { required: true })}
+                    />
+                    {errors.username && "Username name is required"}
+
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        {...register("email", { required: true })}
+                    />
+                    {errors.email && "Email is required"}
+
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        {...register("password", { required: true })}
+                    />
+                    {errors.password && "Password is required"}
+
+                    <input
+                        type="text"
+                        placeholder="Profile Picture URL"
+                        {...register("profilePicture", { required: true })}
+                    />
+                    {errors.profilePicture && "Profile picture is required"}
+                    <input type="submit" />
+                </div>
+            </div>
+        </form>
+    );
+}
