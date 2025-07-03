@@ -18,8 +18,13 @@ export default function Register() {
     } = useForm<IFormInputs>();
     const onSubmit: SubmitHandler<IFormInputs> = (data) => {
         const auth = new AuthService();
-        auth.register(data.fullname, data.username, data.email, data.password, data.profilePicture)
-        console.log(data)
+        // Get the file from the input
+        const fileInput = document.querySelector('input[type="file"][name="profilePicture"]') as HTMLInputElement;
+        const profilePicture = fileInput?.files?.[0];
+
+        auth.register(data.fullname, data.username, data.email, data.password, profilePicture);
+        console.log("INPUT:",fileInput,"\nFILE:" ,profilePicture, "\ndata",data);
+
     };
 
 
