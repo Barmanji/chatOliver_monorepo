@@ -5,6 +5,7 @@ import Landing from "./pages/Landing";
 import AuthLayout from "./components/AuthLayout";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Chat from "./pages/Chat";
 
 function App() {
     // const [count, setCount] = useState(0)
@@ -14,7 +15,7 @@ function App() {
             <BrowserRouter>
                 <Routes>
                     <Route index element={<Landing />} />
-                    {/* <Route path="page" element={<Page />} /> */}
+                    <Route path="chat" element={<Chat />} />
                     <Route element={<AuthLayout />}>
                         <Route path="login" element={<Login />} />
                         <Route path="register" element={<Register />} />
