@@ -124,6 +124,9 @@ importers:
       axios:
         specifier: ^1.10.0
         version: 1.10.0
+      form-data:
+        specifier: ^4.0.3
+        version: 4.0.3
       react:
         specifier: ^19.1.0
         version: 19.1.0
