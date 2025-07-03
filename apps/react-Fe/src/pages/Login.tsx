@@ -1,5 +1,6 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { AuthService } from "../api/auth/auth";
+import { useNavigate } from "react-router";
 
 interface IFormInput {
     identifier: string; // can be email or username
@@ -15,7 +16,13 @@ export default function Login() {
             : { username: data.identifier, password: data.password };
         const auth = new AuthService
         auth.login(data.identifier, data.password)
+
+
     };
+    const navigate = useNavigate();
+    const handleClick = () => {
+        navigate('/chat');
+    }
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -31,7 +38,7 @@ export default function Login() {
                     {...register("password", { required: "Password is required", minLength: { value: 0, message: "Password must be at least 6 characters" } })}
                 />
             </div>
-            <input className="py-12" type="submit" />
+            <input onClick={handleClick} className="py-12" type="submit" />
         </form>
     );
 }
