@@ -1,9 +1,7 @@
 import axios from "axios";
 import FormData from "form-data";
-import fs from "fs";
 import { config } from "../../config/config";
-{
-}
+
 export class AuthService {
     static API_BASE_URL = `${config.server}/api/v1`;
 
@@ -12,28 +10,25 @@ export class AuthService {
         username: string,
         email: string,
         password: string,
-        // pfp: string,
+        profilePicture: File | undefined,
     ) {
         try {
-            let data = new FormData();
+            const data = new FormData();
             data.append("username", username);
             data.append("email", email);
             data.append("password", password);
             data.append("fullname", fullname);
-            data.append(
-                "profilePicture",
-                fs.createReadStream(
-                    "/home/barmanji/Downloads/ColorWall/wallhaven-d85d33.jpg",
-                ),
-            );
+            if (profilePicture) {
+                data.append("profilePicture", profilePicture);
+            }
 
             let config = {
                 method: "post",
                 maxBodyLength: Infinity,
-                url: "http://localhost:3004/api/v1/user/register",
-                headers: {
-                    ...data.getHeaders(),
-                },
+                url: `${AuthService.API_BASE_URL}/user/register`,
+                // headers: { // headers mat add kr laude
+                //     "Content-Type": "application/json",
+                // },
                 // withCredentials: true,
                 data: data,
             };
@@ -68,8 +63,6 @@ export class AuthService {
                 "AUTH_ACCESS_TOKEN",
                 JSON.stringify(response.data.data.accessToken),
             );
-            console.log(localStorage.getItem("AUTH_ACCESS_TOKEN"));
-            console.log(response);
 
             return response.data; // This might contain tokens, user info, etc.
         } catch (error) {
@@ -78,5 +71,14 @@ export class AuthService {
         }
     }
 
-    async logout() {}
+    async logout() {
+        let config = {
+            method: "post",
+            maxBodyLength: Infinity,
+                url: `${AuthService.API_BASE_URL}/user/logout`,
+            headers: {},
+        };
+
+        axios.request(config);
+    }
 }
