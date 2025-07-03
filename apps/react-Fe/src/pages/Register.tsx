@@ -61,7 +61,7 @@ export default function Register() {
                     {errors.password && "Password is required"}
 
                     <input
-                        type="text"
+                        type="file"
                         placeholder="Profile Picture URL"
                         {...register("profilePicture", { required: true })}
                     />
