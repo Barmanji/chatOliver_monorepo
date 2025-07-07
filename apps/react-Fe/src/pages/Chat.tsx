@@ -1,34 +1,69 @@
 import { useEffect, useRef, useState } from "react";
 
 export default function Chat() {
-    const [message, setMessage] = useState(["Default Msg", "hell"]);
-    // const [socket, setSocket] = useState(); // initially its undef
-    const wsRef = useRef();
-    const inputRef = useRef(null); // useRef to get the input value
+    const [messages, setMessages] = useState<string[]>(["Default Msg", "hell"]);
+    const wsRef = useRef<WebSocket | null>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const [myMessages, setMyMessages] = useState<string[]>([]);
+    const roomId = "room1"; // TODO: Make this dynamic if needed
+    const [preview, setPreview] = useState<string | null>(null);
+
     function sendMessage() {
-        // if (!socket) {
-        //     return;
-        // }
-        // socket.send(inputRef.current.value);
-        // TODO: Use ref here as well
+        if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+            return;
+        }
+        if (!inputRef.current) return;
+        const value = inputRef.current.value;
+        if (!value) return;
         wsRef.current.send(
             JSON.stringify({
                 type: "chat",
                 payload: {
-                    message: inputRef.current.value,
+                    message: value,
                 },
-            }),
+            })
         );
+        inputRef.current.value = "";
+        setMyMessages((prev) => [...prev, value]);
+        // Clear preview if it matches the sent message
+        setPreview((prevPreview) => (prevPreview === value ? null : prevPreview));
+    }
+
+    function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+        const value = e.target.value;
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(
+                JSON.stringify({
+                    type: "typing",
+                    payload: { roomId, text: value }
+                })
+            );
+        }
     }
 
     useEffect(() => {
         const ws = new WebSocket("ws://localhost:3000");
-        // setSocket(ws); // roll it up the state, bad approach
         wsRef.current = ws;
         ws.onmessage = (e) => {
-            const newMessage = e.data;
-            // ws.send("Message: " + e);
-            setMessage((prev) => [...prev, newMessage]);
+            let newMessage = e.data;
+            try {
+                const parsed = JSON.parse(e.data);
+                if (parsed.message) {
+                    newMessage = parsed.message;
+                    // Clear preview if the received message matches the preview
+                    setPreview((prevPreview) => (prevPreview === newMessage ? null : prevPreview));
+                } else if (parsed.info) {
+                    newMessage = parsed.info;
+                } else if (parsed.error) {
+                    newMessage = `Error: ${parsed.error}`;
+                } else if (parsed.type === "typing") {
+                    setPreview(parsed.text);
+                    return; // Don't add typing preview to messages
+                }
+            } catch {
+                // Not JSON, just use as is
+            }
+            setMessages((prev) => [...prev, newMessage]);
         };
 
         ws.onopen = () => {
@@ -36,14 +71,14 @@ export default function Chat() {
                 JSON.stringify({
                     type: "join",
                     payload: {
-                        roomId: "ShouldNt Hard code",
+                        roomId,
                     },
-                }),
+                })
             );
         };
         return () => {
-            ws.close()
-        }
+            ws.close();
+        };
     }, []);
 
     return (
@@ -53,19 +88,36 @@ export default function Chat() {
                     A Chat App
                 </h1>
 
-                <div className="text-amber-500 overflow-y-auto flex-1 my-4">
-                    {message.map((message) => (
-                        <div> {message}</div>
-                    ))}
-                    {/* <ul> */}
-                    {/*     {message.map((item, index) => ( */}
-                    {/*         <li key={index}>{item}</li> */}
-                    {/*     ))} */}
-                    {/* </ul> */}
+                <div className="text-amber-500 overflow-y-auto flex-1 my-4 w-full max-w-xl">
+                    {messages.map((message, idx) => {
+                        const isMine = myMessages.includes(message);
+                        return (
+                            <div
+                                key={idx}
+                                className={`flex w-full my-1 ${isMine ? "justify-end" : "justify-start"}`}
+                            >
+                                <div
+                                    className={`px-4 py-2 rounded-lg max-w-xs break-words shadow-md ${
+                                        isMine
+                                            ? "bg-amber-400 text-white self-end"
+                                            : "bg-white text-amber-700 self-start border border-amber-200"
+                                    }`}
+                                >
+                                    {message}
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
 
-                <div className="flex items-center">
+                {/* Typing preview for other users */}
+                {preview && (
+                    <div className="text-xs text-blue-500 mb-2 w-full max-w-xl text-left">Other user typing: {preview}</div>
+                )}
+
+                <div className="flex items-center w-full max-w-xl">
                     <input
+                        onChange={handleInputChange}
                         onKeyDown={(event) => {
                             if (event.key === "Enter") {
                                 sendMessage();
@@ -73,7 +125,7 @@ export default function Chat() {
                         }}
                         ref={inputRef}
                         type="text"
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-3xl dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                        className="flex-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 w-3xl dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         placeholder="Message..."
                     />
                     <button
