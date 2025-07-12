@@ -44,19 +44,6 @@ server.on("connection", (ws) => {
                 }
             });
         }
-        if (parsed.type === "typing" && joinedRoom && parsed.payload?.text !== undefined) {
-            // Broadcast to everyone in the room except sender
-            rooms[joinedRoom]?.forEach((client) => {
-                if (client !== ws && client.readyState === WebSocket.OPEN) {
-                    client.send(
-                        JSON.stringify({
-                            type: "typing",
-                            text: parsed.payload.text,
-                        })
-                    );
-                }
-            });
-        }
     });
 
     ws.on("close", () => {
