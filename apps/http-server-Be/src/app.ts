@@ -16,10 +16,10 @@ app.use(
     })
 );
 
-app.use(express.json({ limit: "16kb" })); // to parse json data for api requests
-app.use(express.urlencoded({ extended: true, limit: "16kb" })); // to parse urlencoded data for form submissions
-app.use(express.static("public")); // in case of serving static files
-app.use(cookieParser()); // populate req.cookies with cookies from the request headers
+app.use(express.json({ limit: "16kb" }));
+app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.static("public"));
+app.use(cookieParser());
 
 // route imports
 import userRouter from "./routes/user.routes.js";
