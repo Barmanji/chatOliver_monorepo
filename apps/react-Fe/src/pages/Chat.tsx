@@ -1,12 +1,25 @@
 import { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "../store/hooks";
+import { useNavigate } from "react-router";
+import { SearchBar } from "../components/search/SearchBar";
+import { SearchResultsList } from "../components/search/SearchResultList";
 
 export default function Chat() {
-    const [messages, setMessages] = useState<string[]>(["Default Msg", "hell"]);
+    const [messages, setMessages] = useState<string[]>([]);
+    const [results, setResults] = useState<any>([]);
     const wsRef = useRef<WebSocket | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [myMessages, setMyMessages] = useState<string[]>([]);
     const roomId = "room1"; // TODO: Make this dynamic if needed
     const [preview, setPreview] = useState<string | null>(null);
+    const auth = useAppSelector((state) => state.auth);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!auth.status) {
+            navigate("/login");
+        }
+    }, [auth.status, navigate]);
 
     function sendMessage() {
         if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -21,12 +34,14 @@ export default function Chat() {
                 payload: {
                     message: value,
                 },
-            })
+            }),
         );
         inputRef.current.value = "";
         setMyMessages((prev) => [...prev, value]);
         // Clear preview if it matches the sent message
-        setPreview((prevPreview) => (prevPreview === value ? null : prevPreview));
+        setPreview((prevPreview) =>
+            prevPreview === value ? null : prevPreview,
+        );
     }
 
     function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -35,8 +50,8 @@ export default function Chat() {
             wsRef.current.send(
                 JSON.stringify({
                     type: "typing",
-                    payload: { roomId, text: value }
-                })
+                    payload: { roomId, text: value },
+                }),
             );
         }
     }
@@ -51,7 +66,9 @@ export default function Chat() {
                 if (parsed.message) {
                     newMessage = parsed.message;
                     // Clear preview if the received message matches the preview
-                    setPreview((prevPreview) => (prevPreview === newMessage ? null : prevPreview));
+                    setPreview((prevPreview) =>
+                        prevPreview === newMessage ? null : prevPreview,
+                    );
                 } else if (parsed.info) {
                     newMessage = parsed.info;
                 } else if (parsed.error) {
@@ -73,7 +90,7 @@ export default function Chat() {
                     payload: {
                         roomId,
                     },
-                })
+                }),
             );
         };
         return () => {
@@ -83,7 +100,14 @@ export default function Chat() {
 
     return (
         <>
+            <div className="search-bar-container">
+                <SearchBar  />
+                {results && results.length > 0 && (
+                    <SearchResultsList results={results} />
+                )}
+            </div>
             <div className="flex flex-col justify-between h-screen p-4 items-center">
+
                 <h1 className="font-bold text-3xl text-amber-500">
                     A Chat App
                 </h1>
@@ -112,7 +136,9 @@ export default function Chat() {
 
                 {/* Typing preview for other users */}
                 {preview && (
-                    <div className="text-xs text-blue-500 mb-2 w-full max-w-xl text-left">Other user typing: {preview}</div>
+                    <div className="text-xs text-blue-500 mb-2 w-full max-w-xl text-left">
+                        Other user typing: {preview}
+                    </div>
                 )}
 
                 <div className="flex items-center w-full max-w-xl">
@@ -140,5 +166,3 @@ export default function Chat() {
         </>
     );
 }
-
-
