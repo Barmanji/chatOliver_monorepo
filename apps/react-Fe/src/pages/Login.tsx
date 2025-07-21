@@ -1,6 +1,9 @@
 import { useForm, type SubmitHandler } from "react-hook-form";
 import { AuthService } from "../api/auth/auth";
 import { useNavigate } from "react-router";
+import { useAppDispatch } from "../store/hooks";
+import { login } from "../store/slices/auth/authSlice";
+import { useState } from "react";
 
 interface IFormInput {
     identifier: string; // can be email or username
@@ -9,20 +12,20 @@ interface IFormInput {
 
 export default function Login() {
     const { register, handleSubmit } = useForm<IFormInput>();
-    const onSubmit: SubmitHandler<IFormInput> = (data) => {
-        const isEmail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.identifier);
-        isEmail
-            ? { email: data.identifier, password: data.password }
-            : { username: data.identifier, password: data.password };
-        const auth = new AuthService
-        auth.login(data.identifier, data.password)
-
-
-    };
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const handleClick = () => {
-        navigate('/chat');
-    }
+    const [error, setError] = useState("");
+
+    const onSubmit: SubmitHandler<IFormInput> = async (data) => {
+        const auth = new AuthService();
+        try {
+            const result = await auth.login(data.identifier, data.password);
+            dispatch(login({ userData: result.data.user })); // adjust if needed
+            navigate("/chat");
+        } catch (err) {
+            setError("Login failed. Please check your credentials.");
+        }
+    };
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -38,7 +41,8 @@ export default function Login() {
                     {...register("password", { required: "Password is required", minLength: { value: 0, message: "Password must be at least 6 characters" } })}
                 />
             </div>
-            <input onClick={handleClick} className="py-12" type="submit" />
+            {error && <div style={{ color: 'red' }}>{error}</div>}
+            <input className="py-12" type="submit" />
         </form>
     );
 }
