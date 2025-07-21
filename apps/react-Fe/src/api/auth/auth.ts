@@ -3,7 +3,7 @@ import FormData from "form-data";
 import { config } from "../../config/config";
 
 export class AuthService {
-    static API_BASE_URL = `${config.server}/api/v1`;
+    static API_BASE_URL = `${config.baseUrl}`;
 
     async register(
         fullname: string,
@@ -75,10 +75,49 @@ export class AuthService {
         let config = {
             method: "post",
             maxBodyLength: Infinity,
-                url: `${AuthService.API_BASE_URL}/user/logout`,
+            url: `${AuthService.API_BASE_URL}/user/logout`,
             headers: {},
         };
 
         axios.request(config);
+    }
+
+    async currentUser() {
+        try {
+            let config = {
+                method: "get",
+                maxBodyLength: Infinity,
+                url: `${AuthService.API_BASE_URL}/user/current-user`,
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                withCredentials: true,
+            };
+
+            const response = await axios.request(config);
+            return response.data?.data || null;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    async getAllUsers() {
+        try {
+            let config = {
+                method: "get",
+                maxBodyLength: Infinity,
+                url: `${AuthService.API_BASE_URL}/user/get-all-users`,
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                withCredentials: true,
+            };
+
+            const response = await axios.request(config);
+            // Assuming the user array is in response.data.data
+            return response.data?.data || [];
+        } catch (error) {
+            throw error;
+        }
     }
 }
