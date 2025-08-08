@@ -1,164 +1,245 @@
-import mongoose, { isValidObjectId } from "mongoose";
-import { Message } from "../models/chat/message.model.js";
+import mongoose, { ObjectId } from "mongoose";
+import { ChatEventEnum } from "../constants.js";
+import { Chat } from "../models/chat/chat.model.js";
+import { ChatMessage } from "../models/chat/message.model.js";
+import { emitSocketEvent } from "../socket/socket.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { Chat } from "../models/chat/chat.model.js";
-import { Request, Response, RequestHandler } from "express";
+import {
+  getLocalPath,
+  getStaticFilePath,
+  removeLocalFile,
+} from "../utils/helper.js";
+import { RequestHandler } from "express";
 
-const sendMessage: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { chatId, content, messageType } = req.body;
-    const senderId = req.user?._id;
+// Type definitions for file uploads
+interface AttachmentFile {
+  url: string;
+  localPath: string;
+}
 
-    if (!senderId) {
-        throw new ApiError(401, "User not authenticated");
-    }
-
-    if (!chatId || !content || !messageType) {
-        throw new ApiError(
-            400,
-            "chatId, content, and messageType are required"
-        );
-    }
-
-    if (!isValidObjectId(chatId)) {
-        throw new ApiError(400, "Invalid chat ID");
-    }
-
-    const message = await Message.create({
-        chatId,
-        senderId,
-        content,
-        messageType,
-    });
-
-    res.status(201).json(new ApiResponse(201, message, "Message sent"));
-});
-
-const getMessages: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { chatId } = req.params;
-
-    if (!isValidObjectId(chatId)) {
-        throw new ApiError(400, "Invalid chat ID");
-    }
-
-    const messages = await Message.find({ chatId })
-        .populate("senderId", "username name profilePicture")
-        .sort({ createdAt: 1 });
-
-    res.status(200).json(new ApiResponse(200, messages));
-});
-
-const markAsSeen: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { messageId } = req.params;
-
-    if (!isValidObjectId(messageId)) {
-        throw new ApiError(400, "Invalid message ID");
-    }
-
-    const message = await Message.findById(messageId);
-    if (!message) throw new ApiError(404, "Message not found");
-
-    message.seen = true;
-    await message.save();
-
-    res.status(200).json(new ApiResponse(200, message, "Marked as seen"));
-});
-
-const markAsDelivered: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { messageId } = req.params;
-
-    if (!isValidObjectId(messageId)) {
-        throw new ApiError(400, "Invalid message ID");
-    }
-
-    const message = await Message.findById(messageId);
-    if (!message) throw new ApiError(404, "Message not found");
-
-    message.delivered = true;
-    await message.save();
-
-    res.status(200).json(new ApiResponse(200, message, "Marked as delivered"));
-});
-
-const deleteMessage: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { messageId } = req.params;
-    const userId = req.user?._id;
-
-    if (!userId) {
-        throw new ApiError(401, "User not authenticated");
-    }
-
-    if (!isValidObjectId(messageId)) {
-        throw new ApiError(400, "Invalid message ID");
-    }
-
-    const message = await Message.findById(messageId);
-    if (!message) throw new ApiError(404, "Message not found");
-
-    if (message.senderId.toString() !== userId.toString()) {
-        throw new ApiError(403, "Only the sender can delete this message");
-    }
-
-    await message.deleteOne();
-
-    res.status(200).json(new ApiResponse(200, null, "Message deleted"));
-});
-
-const editMessage: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { messageId } = req.params;
-    const { content } = req.body;
-    const userId = req.user?._id;
-
-    if (!userId) {
-        throw new ApiError(401, "User not authenticated");
-    }
-
-    if (!isValidObjectId(messageId)) {
-        throw new ApiError(400, "Invalid message ID");
-    }
-
-    if (!content) {
-        throw new ApiError(400, "Content is required");
-    }
-
-    const message = await Message.findById(messageId);
-    if (!message) throw new ApiError(404, "Message not found");
-
-    if (message.senderId.toString() !== userId.toString()) {
-        throw new ApiError(403, "Only the sender can edit this message");
-    }
-
-    message.content = content;
-    await message.save();
-
-    res.status(200).json(new ApiResponse(200, message, "Message edited"));
-});
-
-const getLastMessage: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { chatId } = req.params;
-
-    if (!isValidObjectId(chatId)) {
-        throw new ApiError(400, "Invalid chat ID");
-    }
-
-    const lastMessage = await Message.findOne({ chatId })
-        .sort({ createdAt: -1 })
-        .populate("senderId", "username name");
-
-    if (!lastMessage) {
-        throw new ApiError(404, "No messages found");
-    }
-
-    res.status(200).json(new ApiResponse(200, lastMessage));
-});
-
-export {
-    sendMessage,
-    getMessages,
-    markAsSeen,
-    markAsDelivered,
-    deleteMessage,
-    editMessage,
-    getLastMessage,
+/**
+ * @description Utility function which returns the pipeline stages to structure the chat message schema with common lookups
+ * @returns {mongoose.PipelineStage[]}
+ */
+const chatMessageCommonAggregation = () => {
+  return [
+    {
+      $lookup: {
+        from: "users",
+        foreignField: "_id",
+        localField: "sender",
+        as: "sender",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              avatar: 1,
+              email: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        sender: { $first: "$sender" },
+      },
+    },
+  ];
 };
+
+const getAllMessages: RequestHandler = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+
+  const selectedChat = await Chat.findById(chatId);
+
+  if (!selectedChat) {
+    throw new ApiError(404, "Chat does not exist");
+  }
+
+  // Only send messages if the logged in user is a part of the chat he is requesting messages of
+  if (!selectedChat.participants?.includes((req.user as any)._id)) {
+    throw new ApiError(400, "User is not a part of this chat");
+  }
+
+  const messages = await ChatMessage.aggregate([
+    {
+      $match: {
+        chat: new mongoose.Types.ObjectId(chatId),
+      },
+    },
+    ...chatMessageCommonAggregation(),
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, messages || [], "Messages fetched successfully")
+    );
+});
+
+const sendMessage: RequestHandler = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+  const { content } = req.body;
+
+  // Type assertion for files
+  const files = req.files as { attachments?: Express.Multer.File[] } | undefined;
+
+  if (!content && !files?.attachments?.length) {
+    throw new ApiError(400, "Message content or attachment is required");
+  }
+
+  const selectedChat = await Chat.findById(chatId);
+
+  if (!selectedChat) {
+    throw new ApiError(404, "Chat does not exist");
+  }
+
+  const messageFiles: AttachmentFile[] = [];
+
+  if (files && files.attachments && files.attachments.length > 0) {
+    files.attachments.map((attachment: Express.Multer.File) => {
+      messageFiles.push({
+        url: getStaticFilePath(req, attachment.filename),
+        localPath: getLocalPath(attachment.filename),
+      });
+    });
+  }
+
+  // Create a new message instance with appropriate metadata
+  const message = await ChatMessage.create({
+    sender: new mongoose.Types.ObjectId((req.user as any)._id),
+    content: content || "",
+    chat: new mongoose.Types.ObjectId(chatId),
+    attachments: messageFiles,
+  });
+
+  // update the chat's last message which could be utilized to show last message in the list item
+  const chat = await Chat.findByIdAndUpdate(
+    chatId,
+    {
+      $set: {
+        lastMessage: message._id,
+      },
+    },
+    { new: true }
+  );
+
+  // structure the message
+  const messages = await ChatMessage.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(message._id),
+      },
+    },
+    ...chatMessageCommonAggregation(),
+  ]);
+
+  // Store the aggregation result
+  const receivedMessage = messages[0];
+
+  if (!receivedMessage) {
+    throw new ApiError(500, "Internal server error");
+  }
+
+  // logic to emit socket event about the new message created to the other participants
+  chat.participants.forEach((participantObjectId: ObjectId) => {
+    // here the chat is the raw instance of the chat in which participants is the array of object ids of users
+    // avoid emitting event to the user who is sending the message
+    if (participantObjectId.toString() === (req.user as any)._id.toString()) return;
+
+    // emit the receive message event to the other participants with received message as the payload
+    emitSocketEvent(
+      req,
+      participantObjectId.toString(),
+      ChatEventEnum.MESSAGE_RECEIVED_EVENT,
+      receivedMessage
+    );
+  });
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, receivedMessage, "Message saved successfully"));
+});
+
+const deleteMessage: RequestHandler = asyncHandler(async (req, res) => {
+  //controller to delete chat messages and attachments
+
+  const { chatId, messageId } = req.params;
+
+  //Find the chat based on chatId and checking if user is a participant of the chat
+  const chat = await Chat.findOne({
+    _id: new mongoose.Types.ObjectId(chatId),
+    participants: (req.user as any)._id,
+  });
+
+  if (!chat) {
+    throw new ApiError(404, "Chat does not exist");
+  }
+
+  //Find the message based on message id
+  const message = await ChatMessage.findOne({
+    _id: new mongoose.Types.ObjectId(messageId),
+  });
+
+  if (!message) {
+    throw new ApiError(404, "Message does not exist");
+  }
+
+  // Check if user is the sender of the message
+  if (message.sender.toString() !== (req.user as any)._id.toString()) {
+    throw new ApiError(
+      403,
+      "You are not the authorised to delete the message, you are not the sender"
+    );
+  }
+  if (message.attachments.length > 0) {
+    //If the message is attachment  remove the attachments from the server
+    message.attachments.map((asset: any) => {
+      removeLocalFile(asset.localPath);
+    });
+  }
+  //deleting the message from DB
+  await ChatMessage.deleteOne({
+    _id: new mongoose.Types.ObjectId(messageId),
+  });
+
+  //Updating the last message of the chat to the previous message after deletion if the message deleted was last message
+  if (chat.lastMessage.toString() === message._id.toString()) {
+    const lastMessage = await ChatMessage.findOne(
+      { chat: chatId },
+      {},
+      { sort: { createdAt: -1 } }
+    );
+
+    await Chat.findByIdAndUpdate(chatId, {
+      lastMessage: lastMessage ? lastMessage?._id : null,
+    });
+  }
+  // logic to emit socket event about the message deleted  to the other participants
+  chat.participants.forEach((participantObjectId: ObjectId) => {
+    // here the chat is the raw instance of the chat in which participants is the array of object ids of users
+    // avoid emitting event to the user who is deleting the message
+    if (participantObjectId.toString() === (req.user as any)._id.toString()) return;
+    // emit the delete message event to the other participants frontend with delete messageId as the payload
+    emitSocketEvent(
+      req,
+      participantObjectId.toString(),
+      ChatEventEnum.MESSAGE_DELETE_EVENT,
+      message
+    );
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, message, "Message deleted successfully"));
+});
+
+export { getAllMessages, sendMessage, deleteMessage };

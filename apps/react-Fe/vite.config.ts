@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
 // https://vite.dev/config/
 export default defineConfig({
      server: {
@@ -8,5 +7,5 @@ export default defineConfig({
           '/api': 'http://localhost:3004', // Adjust as needed
         }
       },
-    plugins: [tailwindcss(), react()],
+    plugins: [ react()],
 });

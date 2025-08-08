@@ -1,40 +1,30 @@
 import mongoose, { Schema } from "mongoose";
-import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
-const messageSchema = new Schema(
-    {
-        chatId: {
-            type: Schema.Types.ObjectId,
-            ref: "Chat",
-            required: true,
-        },
-        senderId: {
-            type: Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-        },
-        content: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        messageType: {
-            type: String,
-            required: true,
-        },
-        delivered: {
-            type: Boolean,
-            default: false,
-        },
-        seen: {
-            type: Boolean,
-            default: false,
-        },
+// TODO: Add image and pdf file sharing in the next version
+const chatMessageSchema = new Schema(
+  {
+    sender: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
     },
-    {
-        timestamps: true,
-    }
+    content: {
+      type: String,
+    },
+    attachments: {
+      type: [
+        {
+          url: String,
+          localPath: String,
+        },
+      ],
+      default: [],
+    },
+    chat: {
+      type: Schema.Types.ObjectId,
+      ref: "Chat",
+    },
+  },
+  { timestamps: true }
 );
 
-messageSchema.plugin(mongooseAggregatePaginate);
-export const Message = mongoose.model("Message", messageSchema);
+export const ChatMessage = mongoose.model("ChatMessage", chatMessageSchema);

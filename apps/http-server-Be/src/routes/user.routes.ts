@@ -13,7 +13,8 @@ import {
     updateUserBio,
     getUserProfile,
     getAnyUserFriendList,
-    getMyFriendsList
+    getMyFriendsList,
+    getAllUsers
 } from "../controllers/user.controller.js";
 
 
@@ -44,6 +45,7 @@ router.route("/update-account").put(updateAccountDetails);
 router.route("/update-profile-picture").put(upload.single("profilePicture"), updateUserProfilePicture);
 router.route("/update-bio").put(updateUserBio);
 router.route("/get-my-friend-list").get(getMyFriendsList);
+router.route("/get-all-users").get(getAllUsers);
 
 export default router;
 

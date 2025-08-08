@@ -1,32 +1,78 @@
 import express, { Router } from "express";
+import {
+  addNewParticipantInGroupChat,
+  createAGroupChat,
+  createOrGetAOneOnOneChat,
+  deleteGroupChat,
+  deleteOneOnOneChat,
+  getAllChats,
+  getGroupChatDetails,
+  leaveGroupChat,
+  removeParticipantFromGroupChat,
+  renameGroupChat,
+  searchAvailableUsers,
+} from "../controllers/chat.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import {
-    createChat,
-    getUserChats,
-    getChatById,
-    addUserToGroup,
-    removeUserFromGroup,
-    updateTypingStatus,
-    deleteChat,
-    createGroupChat
-} from "../controllers/chat.controller.js";
+  createAGroupChatValidator,
+  updateGroupChatNameValidator,
+} from "../validators/chat.validators.js";
+import { mongoIdPathVariableValidator } from "../validators/mongodb.validators.js";
+import { validate } from "../validators/validate.js";
 
-const router:Router = express.Router();
+const router: Router = express.Router();
 
-// Protected routes only
 router.use(verifyJWT);
 
-// Routes
-router.route("/").post(createChat).get(getUserChats); // POST = create chat, GET = get user's chats
+router.route("/").get(getAllChats);
 
-router.route("/:chatId").get(getChatById).delete(deleteChat);
+router.route("/users").get(searchAvailableUsers);
 
-// feels illegal
-// router.route("/group/add-user").put(addUserToGroup);
-// router.route("/group/remove-user").put(removeUserFromGroup);
-// router.route("/group").post(createGroupChat); // create group chat
+router
+  .route("/c/:receiverId")
+  .post(
+    mongoIdPathVariableValidator("receiverId"),
+    validate,
+    createOrGetAOneOnOneChat
+  );
 
-router.route("/typing").put(updateTypingStatus);
+router
+  .route("/group")
+  .post(createAGroupChatValidator(), validate, createAGroupChat);
 
+router
+  .route("/group/:chatId")
+  .get(mongoIdPathVariableValidator("chatId"), validate, getGroupChatDetails)
+  .patch(
+    mongoIdPathVariableValidator("chatId"),
+    updateGroupChatNameValidator(),
+    validate,
+    renameGroupChat
+  )
+  .delete(mongoIdPathVariableValidator("chatId"), validate, deleteGroupChat);
+
+router
+  .route("/group/:chatId/:participantId")
+  .post(
+    mongoIdPathVariableValidator("chatId"),
+    mongoIdPathVariableValidator("participantId"),
+    validate,
+    addNewParticipantInGroupChat
+  )
+  .delete(
+    mongoIdPathVariableValidator("chatId"),
+    mongoIdPathVariableValidator("participantId"),
+    validate,
+    removeParticipantFromGroupChat
+  );
+
+router
+  .route("/leave/group/:chatId")
+  .delete(mongoIdPathVariableValidator("chatId"), validate, leaveGroupChat);
+
+router
+  .route("/remove/:chatId")
+  .delete(mongoIdPathVariableValidator("chatId"), validate, deleteOneOnOneChat);
 
 export default router;
+
