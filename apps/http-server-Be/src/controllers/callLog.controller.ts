@@ -10,9 +10,9 @@ interface AuthenticatedRequest extends Request {
     user?: IUser;
 }
 
-const createCallLog: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+const createCallLog: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { receiver, callType, status } = req.body;
-    const caller = req.user?._id;
+    const caller = (req.user as any)._id;
 
     if (!caller) {
         throw new ApiError(401, "User not authenticated");
@@ -31,8 +31,8 @@ const createCallLog: RequestHandler = asyncHandler(async (req: AuthenticatedRequ
     res.status(201).json(new ApiResponse(201, log, "Call log created"));
 });
 
-const getUserCallLogs: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
-    const userId = req.user?._id;
+const getUserCallLogs: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const userId = (req.user as any)._id;
 
     if (!userId) {
         throw new ApiError(401, "User not authenticated");
@@ -62,9 +62,9 @@ const getCallLogById: RequestHandler = asyncHandler(async (req: Request, res: Re
     res.status(200).json(new ApiResponse(200, log));
 });
 
-const deleteCallLog: RequestHandler = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+const deleteCallLog: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { logId } = req.params;
-    const userId = req.user?._id;
+    const userId = (req.user as any)._id;
 
     if (!userId) {
         throw new ApiError(401, "User not authenticated");
