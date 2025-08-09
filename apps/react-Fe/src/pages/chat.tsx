@@ -512,7 +512,7 @@ const ChatPage = () => {
                           return (
                             <img
                               key={participant._id}
-                              src={participant.avatar.url}
+                              src={participant.avatar}
                               className={classNames(
                                 "w-9 h-9 border-[1px] border-white rounded-full absolute outline outline-4 outline-dark",
                                 i === 0
