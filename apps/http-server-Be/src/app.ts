@@ -88,7 +88,6 @@ initializeSocketIO(io);
 import userRouter from "./routes/user.routes.js";
 import chatRouter from "./routes/chat.routes.js";
 import messageRouter from "./routes/message.routes.js";
-
 import friendRequestRouter from "./routes/friend-request.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
 import callLogRouter from "./routes/callLog.routes.js";
@@ -102,5 +101,6 @@ app.use("/api/v1/friend-requests", friendRequestRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/call-logs", callLogRouter);
 app.use("/api/v1/healthcheck", healthcheckRouter);
+
 
 export { httpServer };
