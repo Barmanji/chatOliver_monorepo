@@ -54,6 +54,9 @@ importers:
 
   apps/http-server-Be:
     dependencies:
+      '@types/cookie':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@types/express':
         specifier: ^5.0.2
         version: 5.0.2
@@ -76,8 +79,8 @@ importers:
         specifier: ^2.6.1
         version: 2.6.1
       cookie:
-        specifier: ^1.0.2
-        version: 1.0.2
+        specifier: 0.7.2
+        version: 0.7.2
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -1135,6 +1138,9 @@ packages:
     resolution: {integrity: sha512-tGZiZ2Gtc4m3wIdLkZ8mkj1T6CEHb35+VApbL2T14Dew8HA7c+04dmKqsKRNC+8RJPm16JEK0tFSwdZqubfc4g==}
     peerDependencies:
       '@types/express': '*'
+
+  '@types/cookie@0.4.1':
+    resolution: {integrity: sha512-XW/Aa8APYr6jSVVA1y/DEIZX0/GMKLEVekNG727R8cs56ahETkRAy/3DR7+fJyh7oUgGwNQaRfXCun0+KbWY7Q==}
 
   '@types/cors@2.8.19':
     resolution: {integrity: sha512-mFNylyeyqN93lfe/9CSxOGREz8cpzAhH+E93xJ4xWQf62V8sQ/24reV2nyzUWM6H6Xji+GGHpkbLe7pVoUEskg==}
@@ -4537,6 +4543,8 @@ snapshots:
   '@types/cookie-parser@1.4.9(@types/express@5.0.2)':
     dependencies:
       '@types/express': 5.0.2
+
+  '@types/cookie@0.4.1': {}
 
   '@types/cors@2.8.19':
     dependencies:
