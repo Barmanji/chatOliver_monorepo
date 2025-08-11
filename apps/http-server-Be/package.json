@@ -20,6 +20,7 @@
     "license": "ISC",
     "type": "commonjs",
     "dependencies": {
+        "@types/cookie": "^0.4.1",
         "@types/express": "^5.0.2",
         "@types/express-session": "^1.18.2",
         "@types/morgan": "^1.9.10",
@@ -27,7 +28,7 @@
         "@types/request-ip": "^0.0.41",
         "bcryptjs": "^3.0.2",
         "cloudinary": "^2.6.1",
-        "cookie": "^1.0.2",
+        "cookie": "0.7.2",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
         "dotenv": "^16.5.0",
