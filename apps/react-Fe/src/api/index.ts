@@ -4,117 +4,122 @@ import { LocalStorage } from "../utils";
 
 // Create an Axios instance for API requests
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_SERVER_URI,
-  withCredentials: true,
-  timeout: 120000,
+    baseURL: import.meta.env.VITE_SERVER_URI,
+    withCredentials: true,
+    timeout: 120000,
 });
 
 // Add an interceptor to set authorization header with user token before requests
 apiClient.interceptors.request.use(
-  function (config) {
-    // Retrieve user token from local storage
-    const token = LocalStorage.get("token");
-    // Set authorization header with bearer token
-    config.headers.Authorization = `Bearer ${token}`;
-    return config;
-  },
-  function (error) {
-    return Promise.reject(error);
-  }
+    function (config) {
+        // Retrieve user token from local storage
+        const token = LocalStorage.get("token");
+        // Set authorization header with bearer token
+        config.headers.Authorization = `Bearer ${token}`;
+        return config;
+    },
+    function (error) {
+        return Promise.reject(error);
+    },
 );
 
 // API functions for different actions
 const loginUser = (data: { username: string; password: string }) => {
-  return apiClient.post("/api/v1/user/login", data);
+    return apiClient.post("/user/login", data);
 };
 
 const registerUser = (data: {
-  email: string;
-  password: string;
-  username: string;
+    email: string;
+    username: string;
+    password: string;
+    avatar: File | null;
 }) => {
-  return apiClient.post("/api/v1/user/register", data);
+    return apiClient.post("/user/register", data, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
 };
 
 const logoutUser = () => {
-  return apiClient.post("/api/v1/user/logout");
+    return apiClient.post("/user/logout");
 };
 
 const getAvailableUsers = () => {
-  return apiClient.get("/chat-app/chats/users");
+    return apiClient.get("/chats/users");
 };
 
 const getUserChats = () => {
-  return apiClient.get(`/chat-app/chats`);
+    return apiClient.get(`/chats`);
 };
 
 const createUserChat = (receiverId: string) => {
-  return apiClient.post(`/chat-app/chats/c/${receiverId}`);
+    return apiClient.post(`/chats/c/${receiverId}`);
 };
 
 const createGroupChat = (data: { name: string; participants: string[] }) => {
-  return apiClient.post(`/chat-app/chats/group`, data);
+    return apiClient.post(`/chats/group`, data);
 };
 
 const getGroupInfo = (chatId: string) => {
-  return apiClient.get(`/chat-app/chats/group/${chatId}`);
+    return apiClient.get(`/chats/group/${chatId}`);
 };
 
 const updateGroupName = (chatId: string, name: string) => {
-  return apiClient.patch(`/chat-app/chats/group/${chatId}`, { name });
+    return apiClient.patch(`/chats/group/${chatId}`, { name });
 };
 
 const deleteGroup = (chatId: string) => {
-  return apiClient.delete(`/chat-app/chats/group/${chatId}`);
+    return apiClient.delete(`/chats/group/${chatId}`);
 };
 
 const deleteOneOnOneChat = (chatId: string) => {
-  return apiClient.delete(`/chat-app/chats/remove/${chatId}`);
+    return apiClient.delete(`/chats/remove/${chatId}`);
 };
 
 const addParticipantToGroup = (chatId: string, participantId: string) => {
-  return apiClient.post(`/chat-app/chats/group/${chatId}/${participantId}`);
+    return apiClient.post(`/chats/group/${chatId}/${participantId}`);
 };
 
 const removeParticipantFromGroup = (chatId: string, participantId: string) => {
-  return apiClient.delete(`/chat-app/chats/group/${chatId}/${participantId}`);
+    return apiClient.delete(`/chats/group/${chatId}/${participantId}`);
 };
 
 const getChatMessages = (chatId: string) => {
-  return apiClient.get(`/chat-app/messages/${chatId}`);
+    return apiClient.get(`/messages/${chatId}`);
 };
 
 const sendMessage = (chatId: string, content: string, attachments: File[]) => {
-  const formData = new FormData();
-  if (content) {
-    formData.append("content", content);
-  }
-  attachments?.map((file) => {
-    formData.append("attachments", file);
-  });
-  return apiClient.post(`/chat-app/messages/${chatId}`, formData);
+    const formData = new FormData();
+    if (content) {
+        formData.append("content", content);
+    }
+    attachments?.map((file) => {
+        formData.append("attachments", file);
+    });
+    return apiClient.post(`/messages/${chatId}`, formData);
 };
 
 const deleteMessage = (chatId: string, messageId: string) => {
-  return apiClient.delete(`/chat-app/messages/${chatId}/${messageId}`);
+    return apiClient.delete(`/messages/${chatId}/${messageId}`);
 };
 
 // Export all the API functions
 export {
-  addParticipantToGroup,
-  createGroupChat,
-  createUserChat,
-  deleteGroup,
-  deleteOneOnOneChat,
-  getAvailableUsers,
-  getChatMessages,
-  getGroupInfo,
-  getUserChats,
-  loginUser,
-  logoutUser,
-  registerUser,
-  removeParticipantFromGroup,
-  sendMessage,
-  updateGroupName,
-  deleteMessage,
+    addParticipantToGroup,
+    createGroupChat,
+    createUserChat,
+    deleteGroup,
+    deleteOneOnOneChat,
+    getAvailableUsers,
+    getChatMessages,
+    getGroupInfo,
+    getUserChats,
+    loginUser,
+    logoutUser,
+    registerUser,
+    removeParticipantFromGroup,
+    sendMessage,
+    updateGroupName,
+    deleteMessage,
 };

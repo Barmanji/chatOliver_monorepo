@@ -19,7 +19,7 @@ export interface ChatMessageInterface {
   attachments: {
     url: string;
     localPath: string;
-    _id: string;
+    _id?: string;
   }[];
   createdAt: string;
   updatedAt: string;

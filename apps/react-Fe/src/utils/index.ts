@@ -1,10 +1,8 @@
-// Importing necessary modules and interfaces
 import type { AxiosResponse } from "axios";
 import type { FreeAPISuccessResponseInterface } from "../interfaces/api";
 import type { ChatListItemInterface } from "../interfaces/chat";
 import type { UserInterface } from "../interfaces/user";
 
-// A utility function for handling API requests with loading, success, and error handling
 export const requestHandler = async (
   api: () => Promise<AxiosResponse<FreeAPISuccessResponseInterface, any>>,
   setLoading: ((loading: boolean) => void) | null,
@@ -64,7 +62,7 @@ export const getChatObjectMetadata = (
     // Return metadata specific to group chats.
     return {
       // Default avatar for group chats.
-      avatar: "https://via.placeholder.com/100x100.png",
+      avatar: "https://w.wallhaven.cc/full/1p/wallhaven-1p5z71.jpg",
       title: chat.name, // Group name serves as the title.
       description: `${chat.participants.length} members in the chat`, // Description indicates the number of members.
       lastMessage: chat.lastMessage

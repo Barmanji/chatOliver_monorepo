@@ -1,5 +1,4 @@
-// Import necessary libraries and types
-import React, { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
