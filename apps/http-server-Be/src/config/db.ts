@@ -4,11 +4,6 @@ import { DB_NAME } from "../constants";
 import logger from "../logger/winston.logger.js";
 dotenv.config({ path: "./.env" });
 
-// Desc: Database connection Dick way
-// const mongoose = require('mongoose');
-// mongoose.connect('mongodb://127.0.0.1:27017/test');
-//
-// DB conn Mentoss way ;-)
 const connectDB = async () => {
     try {
         const mongooseInstance = await mongoose.connect(
