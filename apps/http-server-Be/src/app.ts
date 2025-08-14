@@ -11,7 +11,8 @@ import passport from "passport";
 import { ApiError } from "./utils/ApiError.js";
 import morganMiddleware from "./logger/morgor.logger.js";
 import { initializeSocketIO } from "./socket/socket.js";
-
+import swaggerUi from "swagger-ui-express";
+import swaggerDocument from "../swagger-output.json";
 dotenv.config({ path: "./.env" });
 
 
@@ -98,5 +99,16 @@ app.use("/api/v1/messages", messageRouter);
 app.use("/api/v1/call-logs", callLogRouter);
 app.use("/api/v1/healthcheck", healthcheckRouter);
 
+
+app.use(
+  "/",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    swaggerOptions: {
+      docExpansion: "none", // keep all the sections collapsed by default
+    },
+    customSiteTitle: "FreeAPI docs",
+  })
+);
 
 export { httpServer };
