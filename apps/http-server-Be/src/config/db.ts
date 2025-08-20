@@ -6,8 +6,9 @@ dotenv.config({ path: "./.env" });
 
 const connectDB = async () => {
     try {
+        console.log(`${process.env.MONGODB_LOCAL_URI}/${DB_NAME}`)
         const mongooseInstance = await mongoose.connect(
-            `${process.env.MONGODB_URI}/${DB_NAME}`,
+            `${process.env.MONGODB_LOCAL_URI}/${DB_NAME}`,
         );
         console.log(
             `\n MONGO DB IS CONNECTED || DB HOST: ${mongooseInstance.connection.host}, PORT: ${process.env.PORT}`,
