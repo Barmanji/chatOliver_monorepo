@@ -6,16 +6,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { removeUnusedMulterImageFilesOnError } from "../utils/helper.js";
 import { NextFunction, Request, Response } from "express";
 
-/**
- *
- * @param {unknown} err
- * @param {import("express").Request} req
- * @param {import("express").Response} res
- * @param {import("express").NextFunction} next
- *
- *
- * @description This middleware is responsible to catch the errors from any request handler wrapped inside the {@link asyncHandler}
- */
 const errorHandler = (err: unknown, req: Request, res: Response, next: NextFunction) => {
   let apiError: ApiError;
 

@@ -23,6 +23,11 @@ interface TokenPayload extends JwtPayload {
     _id: string;
 }
 
+// Extend the IUser interface to include required _id
+interface IUserWithId extends IUser {
+    _id: Types.ObjectId;
+}
+
 const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
     try {
         const user = (await User.findById(userId)) as IUser & IUserMethods;
@@ -43,15 +48,15 @@ const generateAccessAndRefreshTokens = async (userId: Types.ObjectId) => {
 
 const registerUser: RequestHandler = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const multerReq = req as MulterRequest;
-    const { username, email, fullname, password } = multerReq.body;
+    const { username, email, password } = multerReq.body;
     if (
-        [username, email, fullname, password].some(
+        [username, email, password].some(
             (field) => field?.trim() === "",
         )
     ) {
         throw new ApiError(
             400,
-            "All fields are compulsory - username, email, fullname, password",
+            "All fields are compulsory - username, email, password",
         );
     }
     const existedUser = await User.findOne({
@@ -61,23 +66,23 @@ const registerUser: RequestHandler = asyncHandler(async (req: Request, res: Resp
         throw new ApiError(409, "User with this email already exists");
     }
 
-    if (!multerReq.files?.profilePicture?.[0]?.path) {
+    if (!multerReq.files?.avatar?.[0]?.path) {
         throw new ApiError(400, "Profile picture file is required");
     }
 
-    const profilePictureLocalPath = multerReq.files.profilePicture[0].path;
+    const avatarLocalPath = multerReq.files.avatar[0].path;
     //const coverImageLocalPath = req.files?.coverImage[0]?.path; //[0] is for first property
-    if (!profilePictureLocalPath) {
+    if (!avatarLocalPath) {
         throw new ApiError(
             400,
             "Profile image isn't uploaded properly locally",
         );
     }
 
-    const profilePictureUploadedOnClodinary = await uploadResultCloudinary(
-        profilePictureLocalPath,
+    const avatarUploadedOnClodinary = await uploadResultCloudinary(
+        avatarLocalPath,
     );
-    if (!profilePictureUploadedOnClodinary) {
+    if (!avatarUploadedOnClodinary) {
         throw new ApiError(
             400,
             "Profile image isn't uploaded properly on cloudinary",
@@ -86,8 +91,7 @@ const registerUser: RequestHandler = asyncHandler(async (req: Request, res: Resp
 
     //console.log("req.files: ",req.files)
     const user = await User.create({
-        fullname,
-        profilePicture: profilePictureUploadedOnClodinary.url,
+        avatar: avatarUploadedOnClodinary.url,
         email,
         password,
         username: username.toLowerCase().trim(), // well i have alaready trimmed it
@@ -163,8 +167,9 @@ const loginUser: RequestHandler = asyncHandler(async (req: Request, res: Respons
 });
 
 const logoutUser: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const user = req.user as IUserWithId;
     await User.findByIdAndUpdate(
-        req.user!._id,
+        user._id,
         {
             $unset: { refreshToken: 1 }, //this removes the field of the doc
         },
@@ -235,7 +240,7 @@ const refreshAccessToken: RequestHandler = asyncHandler(async (req: Request, res
 //-------------- CHANGE PASS --------------------/
 const changeCurrentPassword: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
     const { oldPassword, newPassword } = req.body;
-    const user = await User.findById(req.user?._id);
+    const user = await User.findById((req.user as IUserWithId)._id);
     const isPasswordCorrect = await user!.isPasswordCorrect(oldPassword);
     if (!isPasswordCorrect) {
         throw new ApiError(400, "Old password is incorrect");
@@ -258,16 +263,16 @@ const getCurrentUser: RequestHandler = asyncHandler(async (req: Request, res: Re
 });
 
 const updateAccountDetails: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
-    const { username, fullname, email } = req.body;
-    if (!fullname || !username || !email) {
+    const { username, email } = req.body;
+    if (!username || !email) {
         throw new ApiError(400, "All fields are necessary");
     }
     const user = await User.findByIdAndUpdate(
-        req.user?._id,
+        (req.user as IUserWithId)._id,
         {
             $set: {
-                fullname: fullname, //only fullname can be enf due to ES6 , READ about ES6
-                email: email,
+                username: username,
+                email: email
             },
         },
         { new: true },
@@ -286,7 +291,8 @@ const updateUserProfilePicture: RequestHandler = asyncHandler(async (req: Reques
         throw new ApiError(400, "Avatar file is missing");
     }
 
-    const oldProfilePicture = req.user?.profilePicture;
+    const user = req.user as IUserWithId;
+    const oldProfilePicture = user.avatar;
     oldProfilePicture && (await deleteFromCloudinary(oldProfilePicture)); //not understood
     const newProfilePictureUploadedOnClodinary = await uploadResultCloudinary(
         profilePictureLocalPath,
@@ -296,10 +302,10 @@ const updateUserProfilePicture: RequestHandler = asyncHandler(async (req: Reques
         throw new ApiError(400, "Error while uploading profile picture");
     }
     const profilePicuteUpdationOnMongoDB = await User.findByIdAndUpdate(
-        req.user?._id,
+        user._id,
         {
             $set: {
-                profilePicture: newProfilePictureUploadedOnClodinary!.url,
+                avatar: newProfilePictureUploadedOnClodinary!.url,
             },
         },
         { new: true },
@@ -323,8 +329,9 @@ const updateUserBio: RequestHandler = asyncHandler(async (req: Request, res: Res
         throw new ApiError(400, "Invalid bio");
     }
 
+    const user = req.user as IUserWithId;
     const updatedUser = await User.findByIdAndUpdate(
-        req.user!._id,
+        user._id,
         { $set: { bio: bio.trim() } },
         { new: true }, // returns the updated document rather than the original
     ).select("-password"); // returns the user without the password field
@@ -335,9 +342,10 @@ const updateUserBio: RequestHandler = asyncHandler(async (req: Request, res: Res
 });
 
 const getMyFriendsList: RequestHandler = asyncHandler(async (req: Request, res: Response) => {
+    const user = req.user as IUserWithId & { friends: Types.ObjectId[] };
     return res
         .status(200)
-        .json(new ApiResponse(200, req.user!.friends, "Friend list fetched"));
+        .json(new ApiResponse(200, user.friends, "Friend list fetched"));
 });
 
 const getAnyUserFriendList: RequestHandler = asyncHandler(async (req: Request, res: Response) => {

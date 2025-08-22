@@ -28,7 +28,6 @@ const Register = () => {
             });
         };
     useEffect(() => {
-        console.log("Data state updated:", data);
     }, [data]);
 
     // Handle user registration

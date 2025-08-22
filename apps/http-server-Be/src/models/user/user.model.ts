@@ -9,10 +9,9 @@ dotenv.config({ path: "./.env"})
 // ---------------------------
 export interface IUser {
     username: string;
-    fullname: string;
     password: string;
     email: string;
-    profilePicture: string;
+    avatar: string;
     bio: string;
     status: "online" | "offline";
     refreshToken: string;
@@ -37,23 +36,11 @@ export interface IUserMethods {
 // ---------------------------
 const userSchema = new Schema<IUser, Model<IUser, {}, IUserMethods>, {}, IUserMethods>(
     {
-        friends: [
-            {
-                type: Schema.Types.ObjectId,
-                ref: "User",
-            },
-        ],
         username: {
             type: String,
             required: true,
             unique: true,
             lowercase: true,
-            trim: true,
-            index: true,
-        },
-        fullname: {
-            type: String,
-            required: true,
             trim: true,
             index: true,
         },
@@ -68,18 +55,9 @@ const userSchema = new Schema<IUser, Model<IUser, {}, IUserMethods>, {}, IUserMe
             type: String,
             required: [true, "Password is required"],
         },
-        profilePicture: {
+        avatar: {
             type: String,
             required: true,
-        },
-        bio: {
-            type: String,
-            default: "",
-        },
-        status: {
-            type: String,
-            enum: ["online", "offline"],
-            default: "offline",
         },
         refreshToken: {
             type: String,
@@ -111,7 +89,6 @@ userSchema.methods.generateAccessToken = function (): string {
             _id: this._id,
             username: this.username,
             email: this.email,
-            fullname: this.fullname,
         },
         process.env.ACCESS_TOKEN_SECRET as any,
         {

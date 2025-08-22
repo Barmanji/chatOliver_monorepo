@@ -32,7 +32,7 @@ const Select: React.FC<{
             className="block w-full rounded-xl border-0 py-4 px-5 bg-secondary outline outline-[1px] outline-zinc-400 text-white font-light placeholder:text-white/70 focus:ring-[1px] focus:ring-white"
             onChange={(e) => {
               setLocalOptions(
-                options.filter((op) => op.label.includes(e.target.value))
+                options.filter((op) => op.label.includes(e.target.value)),
               );
             }}
             displayValue={(option: (typeof options)[0]) => option?.label}
@@ -54,16 +54,17 @@ const Select: React.FC<{
                 className={({ active }) =>
                   classNames(
                     "cursor-pointer relative rounded-2xl select-none py-4 pl-3 pr-9",
-                    active ? "bg-dark text-white" : "text-white"
+                    active ? "bg-dark text-white" : "text-white",
                   )
                 }
               >
                 {({ active, selected }) => (
                   <>
+
                     <span
                       className={classNames(
                         "block truncate",
-                        selected ? "font-semibold" : ""
+                        selected ? "font-semibold" : "",
                       )}
                     >
                       {option.label}
@@ -73,7 +74,7 @@ const Select: React.FC<{
                       <span
                         className={classNames(
                           "absolute inset-y-0 right-0 flex items-center pr-4",
-                          active ? "text-white" : "text-indigo-600"
+                          active ? "text-white" : "text-indigo-600",
                         )}
                       >
                         <CheckIcon className="h-5 w-5" aria-hidden="true" />

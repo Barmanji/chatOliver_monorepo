@@ -22,6 +22,7 @@ import { validate } from "../validators/validate.js";
 
 const router: Router = express.Router();
 
+// Protect routes with authentication
 router.use(verifyJWT);
 
 router.route("/").get(getAllChats);
