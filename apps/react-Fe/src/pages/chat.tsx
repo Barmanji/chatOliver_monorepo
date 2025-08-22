@@ -490,7 +490,9 @@ const ChatPage = () => {
               </div>
               {/* NOTE: CHAT HEADER PART ENDS ------*/}
               {/*# NOTE: TEXT MODAL CHAT MAIN START -------- */}
-
+              {/* NOTE: TEXT MODAL CHAT MAIN ENDS----------- */}
+              <div className="flex-row">
+              <div className="min-h-5">Lorem ipsum dolor sit amet, consectetur adipisicing elit. In autem dolorum atque commodi recusandae aliquam saepe nihil tempora, ea, odit quasi iste totam? Excepturi, architecto sed? Soluta earum sint eveniet.</div>
               {!(audioCallStatus || videoCallStatus) ? (
                 <div
                   className={classNames(
@@ -527,7 +529,8 @@ const ChatPage = () => {
               ) : (
                 <div>CALL STATUS</div>
               )}
-              {/* NOTE: TEXT MODAL CHAT MAIN ENDS----------- */}
+
+              </div>
               {attachedFiles.length > 0 ? (
                 <div className="grid gap-4 grid-cols-5 p-4 justify-start max-w-fit">
                   {attachedFiles.map((file, i) => {
