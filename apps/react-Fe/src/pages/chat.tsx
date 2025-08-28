@@ -69,7 +69,6 @@ const ChatPage = () => {
 
   // NOTE: Calling logic ------
   const [audioCallStatus, setAudioCallStatus] = useState(false);
-  // @ts-ignore
   const [videoCallStatus, setVideoCallStatus] = useState(false);
 
   const updateChatLastMessage = (
@@ -278,10 +277,10 @@ const ChatPage = () => {
 
   // TODO: Gotta make them
   const connectAudioCall = () => {
-    setAudioCallStatus(true);
+    setAudioCallStatus((prev)=> !prev);
   };
   const connectVideoCall = () => {
-    setVideoCallStatus(true);
+    setVideoCallStatus((prev) => !prev);
   };
 
   useEffect(() => {
@@ -491,46 +490,48 @@ const ChatPage = () => {
               {/* NOTE: CHAT HEADER PART ENDS ------*/}
               {/*# NOTE: TEXT MODAL CHAT MAIN START -------- */}
               {/* NOTE: TEXT MODAL CHAT MAIN ENDS----------- */}
-              <div className="flex-row">
-              <div className="min-h-5">Lorem ipsum dolor sit amet, consectetur adipisicing elit. In autem dolorum atque commodi recusandae aliquam saepe nihil tempora, ea, odit quasi iste totam? Excepturi, architecto sed? Soluta earum sint eveniet.</div>
-              {!(audioCallStatus || videoCallStatus) ? (
+              <div className="flex flex-col h-[calc(100vh-176px)]">
+                {(videoCallStatus ||  audioCallStatus) && (
+                  <div className="h-1/2 p-4 border-b border-gray-300">
+                    {/* Audio call UI */}
+                    <p>Audio Call Area (half height)</p>
+                  </div>
+                )}
+
                 <div
                   className={classNames(
                     "p-8 overflow-y-auto flex flex-col-reverse gap-6 w-full",
-                    attachedFiles.length > 0
-                      ? "h-[calc(100vh-336px)]"
-                      : "h-[calc(100vh-176px)]",
+                    audioCallStatus
+                      ? attachedFiles.length > 0
+                        ? "h-1/2"
+                        : "h-1/2"
+                      : attachedFiles.length > 0
+                        ? "h-[calc(100vh-336px)]"
+                        : "h-[calc(100vh-176px)]",
                   )}
                   id="message-window"
                 >
                   {loadingMessages ? (
-                    <div className="flex justify-center items-center h-[calc(100%-88px)]">
+                    <div className="flex justify-center items-center h-full">
                       <Typing />
                     </div>
                   ) : (
                     <>
-                      {isTyping ? <Typing /> : null}
-                      {messages?.map((msg) => {
-                        return (
-                          <MessageItem
-                            key={msg._id}
-                            isOwnMessage={msg.sender?._id === user?._id}
-                            isGroupChatMessage={
-                              currentChat.current?.isGroupChat
-                            }
-                            message={msg}
-                            deleteChatMessage={deleteChatMessage}
-                          />
-                        );
-                      })}
+                      {isTyping && <Typing />}
+                      {messages?.map((msg) => (
+                        <MessageItem
+                          key={msg._id}
+                          isOwnMessage={msg.sender?._id === user?._id}
+                          isGroupChatMessage={currentChat.current?.isGroupChat}
+                          message={msg}
+                          deleteChatMessage={deleteChatMessage}
+                        />
+                      ))}
                     </>
                   )}
                 </div>
-              ) : (
-                <div>CALL STATUS</div>
-              )}
-
               </div>
+
               {attachedFiles.length > 0 ? (
                 <div className="grid gap-4 grid-cols-5 p-4 justify-start max-w-fit">
                   {attachedFiles.map((file, i) => {
