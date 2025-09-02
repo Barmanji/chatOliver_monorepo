@@ -276,8 +276,54 @@ const ChatPage = () => {
   };
 
   // TODO: Gotta make them
+  // // Put variables in global scope to make them available to the browser console.
+  const constraints = {
+    audio: false,
+    video: true,
+  };
+  const videoRef = useRef(null);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSuccess = (stream: any) => {
+    const videoTracks = stream.getVideoTracks();
+    console.log("Got stream with constraints:", constraints);
+    console.log(`Using video device: ${videoTracks.label}`);
+    window.stream = stream; // for console access (optional)
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  };
+
+  const handleError = (error) => {
+    if (error.name === "OverconstrainedError") {
+      errorMsgHandler(
+        `OverconstrainedError: The constraints could not be satisfied by the available devices. Constraints: ${JSON.stringify(constraints)}`,
+      );
+    } else if (error.name === "NotAllowedError") {
+      errorMsgHandler(
+        "NotAllowedError: Permissions have not been granted to use your camera and microphone, you need to allow the page access to your devices in order for the demo to work.",
+      );
+    }
+    errorMsgHandler(`getUserMedia error: ${error.name}`, error);
+  };
+
+  const errorMsgHandler = (msg, error) => {
+    setErrorMsg((prev) => prev + `<p>${msg}</p>`);
+    if (typeof error !== "undefined") {
+      console.error(error);
+    }
+  };
+
+  const init = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      handleSuccess(stream);
+    } catch (e) {
+      handleError(e);
+    }
+  };
   const connectAudioCall = () => {
-    setAudioCallStatus((prev)=> !prev);
+    setAudioCallStatus((prev) => !prev);
   };
   const connectVideoCall = () => {
     setVideoCallStatus((prev) => !prev);
@@ -490,14 +536,41 @@ const ChatPage = () => {
               {/* NOTE: CHAT HEADER PART ENDS ------*/}
               {/*# NOTE: TEXT MODAL CHAT MAIN START -------- */}
               {/* NOTE: TEXT MODAL CHAT MAIN ENDS----------- */}
+              {/* TEST: TRYING TO ADD NEW FEATURE */}
               <div className="flex flex-col h-[calc(100vh-176px)]">
-                {(videoCallStatus ||  audioCallStatus) && (
-                  <div className="h-1/2 p-4 border-b border-gray-300">
-                    {/* Audio call UI */}
-                    <p>Audio Call Area (half height)</p>
+                {(videoCallStatus || audioCallStatus) && (
+                  <div className="h-1/2 p-4 border-b border-gray-300 flex flex-col items-center justify-center">
+                    {videoCallStatus && (
+                      <div className="flex flex-col items-center gap-2 w-full">
+                        <button
+                          onClick={init}
+                          className="bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-xl px-4 py-2 mb-2"
+                          // @ts-ignore
+                          disabled={!!window.stream}
+                        >
+                          Start Video
+                        </button>
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          style={{
+                            width: "320px",
+                            height: "240px",
+                            borderRadius: "12px",
+                            background: "#000",
+                          }}
+                        />
+                        <div
+                          id="errorMsg"
+                          className="text-red-600 mt-2 text-sm"
+                          dangerouslySetInnerHTML={{ __html: errorMsg }}
+                        />
+                      </div>
+                    )}
+                    {audioCallStatus && <p>Audio Call Area (half height)</p>}
                   </div>
                 )}
-
                 <div
                   className={classNames(
                     "p-8 overflow-y-auto flex flex-col-reverse gap-6 w-full",
@@ -531,7 +604,6 @@ const ChatPage = () => {
                   )}
                 </div>
               </div>
-
               {attachedFiles.length > 0 ? (
                 <div className="grid gap-4 grid-cols-5 p-4 justify-start max-w-fit">
                   {attachedFiles.map((file, i) => {
